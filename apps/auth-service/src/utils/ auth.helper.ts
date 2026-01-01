@@ -3,6 +3,8 @@ import { ValidationError } from "@packages/error-handler";
 import redis from '@packages/libs/redis';
 import {sendMail} from '../utils/sendmail/index'
 import { NextFunction } from 'express';
+import { Request, Response } from 'express';
+import prisma from '@packages/libs/prisma';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -71,3 +73,75 @@ export const sendOtp = async(name : string ,email : string , template : string) 
     await redis.set(`otpcooldown:${email}`, "true", 'EX', 60); // Cooldown of 1 minute
     return otp;
 }
+
+//verify otp
+export const verifyOtp = async(email : string , otp : string , next : NextFunction) => {
+    const storedOtp = await redis.get(`otp:${email}`);
+    if (storedOtp !== otp) {
+        throw next(new ValidationError('Invalid or expired OTP.'));
+    }
+    const failedAttemptKey = `otp_attempts:${email}`
+    const failedAttempts = parseInt((await redis.get(failedAttemptKey)) || "0");   
+// when otp attempts fails
+
+  if (storedOtp !== otp) {
+    if (failedAttempts >= 2) {
+      await redis.set(`otp_locked:${email}`, "locked", "EX", 1800)
+      await redis.del(`otp:${email}` , failedAttemptKey)
+      throw new ValidationError('Too many failed OTP attempts. Please try again later.')
+    }
+    await redis.set(failedAttemptKey , failedAttempts + 1 , "EX" , 1800)
+    throw new ValidationError(`Incorrect Otp only ${2-failedAttempts} Attempts Left`)
+  }
+   await redis.del( `otp:${email}`, failedAttemptKey)
+}
+
+
+//handle forget password
+
+export const handleforgetpassword = async( req : Request, res : Response , next : NextFunction , userTypes : "user"| "seller" ) => {
+  try {
+    const { email , name } = req.body;
+
+    if (!email) {
+      return next(new ValidationError('Email is required.'));
+    }
+
+    // Check if user exists
+    const user = await prisma.users.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      return next(new ValidationError('User not found.'));
+    }
+
+    // Generate OTP
+    await checkOtpResetrications(email , next);
+    await trackOtpRequests(email , next);
+   // generate otp
+   sendOtp(email , name,"password-reset-mail");
+   res.status(200).json({ message: 'OTP sent to email for password reset.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
+export const verifyForgetPasswordOtp = async( req : Request , res : Response , next : NextFunction) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp ) {
+      return next(new ValidationError('Missing required fields.'));
+    }
+
+    // Verify OTP
+    await verifyOtp(email, otp, next);
+
+    return res.status(200).json({ message: 'Otp verfied successfully you can now reset you password' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
