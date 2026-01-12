@@ -102,7 +102,7 @@ export const verifyOtp = async(email : string , otp : string , next : NextFuncti
 
 export const handleforgetpassword = async( req : Request, res : Response , next : NextFunction , userTypes : "user"| "seller" ) => {
   try {
-    const { email , name } = req.body;
+    const { email } = req.body;
 
     if (!email) {
       return next(new ValidationError('Email is required.'));
@@ -121,7 +121,8 @@ export const handleforgetpassword = async( req : Request, res : Response , next 
     await checkOtpResetrications(email , next);
     await trackOtpRequests(email , next);
    // generate otp
-   sendOtp(email , name,"password-reset-mail");
+   const displayName = user?.name || email.split('@')[0] || 'there';
+   await sendOtp(displayName, email, "user-forget-password-mail");
    res.status(200).json({ message: 'OTP sent to email for password reset.' });
   } catch (error) {
     return next(error);
