@@ -157,34 +157,45 @@ export const resetPassword = async( req : Request , res : Response , next : Next
 
 // refresh token user 
 
-// export const refreshTokenUser = async ( req : Request , res : Response , next : NextFunction) => {
-//   try {
-//     const refreshToken = req.cookies['refresh_token'];
-//     if (!refreshToken) {
-//       return next(new ValidationError('Refresh token not provided.'));
-//     }
+export const refreshTokenUser = async ( req : Request , res : Response , next : NextFunction) => {
+  try {
+    const refreshToken = req.cookies['refresh_token'];
+    if (!refreshToken) {
+      return next(new ValidationError('Refresh token not provided.'));
+    }
 
-//     let payload: any;
-//     try {
-//       payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string);
-//     } catch (err) {
-//       return next(new ValidationError('Invalid refresh token.'));
-//     }
+    let payload: any;
+    try {
+      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string);
+    } catch (err) {
+      return next(new ValidationError('Invalid refresh token.'));
+    }
 
-//     const user = await prisma.users.findUnique({
-//       where: { id: payload.userId }
-//     });
+    const user = await prisma.users.findUnique({
+      where: { id: payload.userId }
+    });
 
-//     if (!user) {
-//       return next(new ValidationError('User not found.'));
-//     }
+    if (!user) {
+      return next(new ValidationError('User not found.'));
+    }
 
-//     const newAccessToken = jwt.sign({ userId: user.id , role: "user" }, process.env.JWT_ACCESS_SECRET as string, { expiresIn: '15m' });
+    const newAccessToken = jwt.sign({ userId: user.id , role: "user" }, process.env.JWT_ACCESS_SECRET as string, { expiresIn: '15m' });
 
-//     setCookie(res, 'access_token', newAccessToken);
+    setCookie(res, 'access_token', newAccessToken);
 
-//     return res.status(200).json({ message: 'Access token refreshed successfully.' });
-//   } catch (error) {
-//     return next(error);
-//   }
-// }
+    return res.status(200).json({ message: 'Access token refreshed successfully.' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+
+// get logged in user details
+export const getLoggedInUser = async ( req : any , res : Response , next : NextFunction) => {
+  try {
+      const user = req.user;
+      return res.status(200).json({ user });
+  } catch (error) {
+    return next(error);
+  }
+}
