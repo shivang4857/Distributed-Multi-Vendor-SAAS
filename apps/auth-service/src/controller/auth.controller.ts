@@ -48,13 +48,17 @@ export const  verifyUser = async (
     if (existingUser){
       return next( new ValidationError("All feilds are required"))
     }
-    await verifyOtp(email, otp, next);
+    const otpVerified = await verifyOtp(email, otp, next);
+    if (!otpVerified) {
+      return next(new ValidationError('OTP verification failed.'));
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     await prisma.users.create({
       data: {
         email,
         name,
         password: hashedPassword,
+        isVerified: true,
       },
     });
     return response.status(201).json({ message: 'User registered successfully.' });
@@ -150,3 +154,37 @@ export const resetPassword = async( req : Request , res : Response , next : Next
     return next(error);
   }
 }
+
+// refresh token user 
+
+// export const refreshTokenUser = async ( req : Request , res : Response , next : NextFunction) => {
+//   try {
+//     const refreshToken = req.cookies['refresh_token'];
+//     if (!refreshToken) {
+//       return next(new ValidationError('Refresh token not provided.'));
+//     }
+
+//     let payload: any;
+//     try {
+//       payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string);
+//     } catch (err) {
+//       return next(new ValidationError('Invalid refresh token.'));
+//     }
+
+//     const user = await prisma.users.findUnique({
+//       where: { id: payload.userId }
+//     });
+
+//     if (!user) {
+//       return next(new ValidationError('User not found.'));
+//     }
+
+//     const newAccessToken = jwt.sign({ userId: user.id , role: "user" }, process.env.JWT_ACCESS_SECRET as string, { expiresIn: '15m' });
+
+//     setCookie(res, 'access_token', newAccessToken);
+
+//     return res.status(200).json({ message: 'Access token refreshed successfully.' });
+//   } catch (error) {
+//     return next(error);
+//   }
+// }

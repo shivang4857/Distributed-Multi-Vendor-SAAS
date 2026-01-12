@@ -1,7 +1,10 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import { Mail, Lock, ArrowRight, Circle } from 'lucide-react';
 
 type LoginForm = {
@@ -10,14 +13,44 @@ type LoginForm = {
   remember: boolean;
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 const LoginPage = () => {
+  const router = useRouter();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
     defaultValues: { remember: true }
   });
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const getErrorMessage = (error: unknown) => {
+    if (axios.isAxiosError(error)) {
+      return error.response?.data?.message || error.message || 'Something went wrong.';
+    }
+    if (error instanceof Error) return error.message;
+    return 'Something went wrong.';
+  };
+
+  const loginMutation = useMutation({
+    mutationFn: async (payload: LoginForm) => {
+      const response = await axios.post(
+        `${API_BASE_URL}api/login-user`,
+        { email: payload.email, password: payload.password },
+        { withCredentials: true }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      setApiError(null);
+      router.push('/');
+    },
+    onError: (error) => {
+      setApiError(getErrorMessage(error));
+    },
+  });
 
   const onSubmit = async (data: LoginForm) => {
-    // TODO: integrate API
-    console.log('Login submit', data);
+    setApiError(null);
+    await loginMutation.mutateAsync(data);
   };
 
   return (
@@ -30,6 +63,11 @@ const LoginPage = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="px-6 pb-6 space-y-5">
+            {apiError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {apiError}
+              </div>
+            )}
             <div className="group">
               <label className="text-sm font-medium text-gray-700">Email</label>
               <div className="mt-1 relative">
@@ -68,11 +106,15 @@ const LoginPage = () => {
                 </span>
                 <span className="text-sm text-gray-700">Remember me</span>
               </label>
-              <Link href="/auth/forget-password" className="text-sm text-blue-600 hover:text-blue-700">Forgot password?</Link>
+              <Link href="/forget-password" className="text-sm text-blue-600 hover:text-blue-700">Forgot password?</Link>
             </div>
 
-            <button type="submit" disabled={isSubmitting} className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition">
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+            <button
+              type="submit"
+              disabled={isSubmitting || loginMutation.isPending}
+              className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition"
+            >
+              {isSubmitting || loginMutation.isPending ? 'Signing in...' : 'Sign in'}
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -83,7 +125,7 @@ const LoginPage = () => {
             </button>
 
             <p className="text-sm text-gray-600 text-center">
-              Don&apos;t have an account? <Link href="/auth/signup" className="text-blue-600 hover:text-blue-700 font-medium">Create one</Link>
+              Don&apos;t have an account? <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">Create one</Link>
             </p>
           </form>
         </div>

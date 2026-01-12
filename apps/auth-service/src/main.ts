@@ -6,9 +6,21 @@ import router from './routes/auth.routes';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from './swagger-output.json';
 const app = express();
-app.use(cors(
-  { origin: ['http://localhost:4200', 'http://localhost:4201', 'http://localhost:4202'], allowedHeaders: ['Content-Type', 'Authorization'], credentials: true }
-));
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:4200',
+    'http://localhost:4201',
+    'http://localhost:4202',
+  ],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.use(cookieParser());

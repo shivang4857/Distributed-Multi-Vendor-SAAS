@@ -94,6 +94,7 @@ export const verifyOtp = async(email : string , otp : string , next : NextFuncti
     throw new ValidationError(`Incorrect Otp only ${2-failedAttempts} Attempts Left`)
   }
    await redis.del( `otp:${email}`, failedAttemptKey)
+   return true;
 }
 
 
@@ -144,4 +145,3 @@ export const verifyForgetPasswordOtp = async( req : Request , res : Response , n
     return next(error);
   }
 }
-
