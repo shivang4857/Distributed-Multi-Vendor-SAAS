@@ -3,9 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { headerBottomNav } from '../../configs/constant';
 import Link from 'next/link';
 import { User2, ShoppingCart } from 'lucide-react';
+import useUser from '../../hooks/useUser';
 
 const HeaderBottom = () => {
   const [isSticky, setIsSticky] = useState(false);
+  const { user, isLoading } = useUser();
+  const displayName = user?.name || user?.email?.split('@')[0];
+  const greeting = isLoading ? 'Loading...' : displayName ? `Hi, ${displayName}` : 'Hello, Sign In';
+  const profileHref = displayName ? '/profile' : '/login';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,11 +53,11 @@ const HeaderBottom = () => {
         {/* Right: Profile + Cart (shown when sticky) */}
         { isSticky && (
           <div className="flex items-center space-x-6">
-            <Link href="/auth/login" className="flex items-center space-x-2 hover:text-blue-700 transition-colors" aria-label="Login or profile">
+            <Link href={profileHref} className="flex items-center space-x-2 hover:text-blue-700 transition-colors" aria-label="Login or profile">
               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 border border-gray-200">
                 <User2 className="w-5 h-5 text-gray-700" />
               </span>
-              <span className="text-sm font-medium text-gray-700">Hello, Sign In</span>
+              <span className="text-sm font-medium text-gray-700">{greeting}</span>
             </Link>
             <Link href="/cart" className="relative hover:text-blue-700 transition-colors" aria-label="Cart">
               <ShoppingCart className="w-6 h-6 text-gray-700" />
@@ -66,4 +71,3 @@ const HeaderBottom = () => {
 };
 
 export default HeaderBottom;
-

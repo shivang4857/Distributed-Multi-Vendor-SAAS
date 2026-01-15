@@ -1,12 +1,19 @@
+'use client';
 import React from 'react';
 import Link from 'next/link';
 import HeaderBottom from './header-bottom';
 import { Roboto } from 'next/font/google';
 import { Search, User2, Heart, ShoppingCart } from 'lucide-react';
+import useUser from '../../hooks/useUser';
 
 const roboto = Roboto({ subsets: ['latin'], weight: ['400', '700'] });
 
 const Header = () => {
+  const { user, isLoading } = useUser();
+  const displayName = user?.name || user?.email?.split('@')[0];
+  const greeting = isLoading ? 'Loading...' : displayName ? `Hi, ${displayName}` : 'Hello, Sign In';
+  const profileHref = displayName ? '/profile' : '/login';
+
   return (
     <header className={`w-full bg-white shadow-sm border-b ${roboto.className}`}>
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
@@ -32,9 +39,9 @@ const Header = () => {
         {/* Profile, Wishlist, Cart */}
         <div className="flex items-center space-x-6">
           {/* Profile */}
-          <Link href="/auth/login" className="flex items-center space-x-2 hover:text-blue-700 transition-colors" aria-label="Login or profile">
+          <Link href={profileHref} className="flex items-center space-x-2 hover:text-blue-700 transition-colors" aria-label="Login or profile">
             <User2 className="w-6 h-6" />
-            <span className="text-sm font-medium">Hello, Sign In</span>
+            <span className="text-sm font-medium">{greeting}</span>
           </Link>
           {/* Wishlist */}
           <Link href="/wishlist" className="relative hover:text-blue-700 transition-colors" aria-label="Wishlist">
