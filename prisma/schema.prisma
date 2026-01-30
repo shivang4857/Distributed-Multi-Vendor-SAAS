@@ -14,33 +14,82 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model images {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  url       String
-  altText   String?
-  file_id  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId  String?  @db.ObjectId @unique
-  users   users?   @relation(fields: [userId], references: [id])
-
-
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  url          String
+  altText      String?
+  file_id      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String?  @unique @db.ObjectId
+  shopAvatarId String?  @unique @db.ObjectId
+  shopCoverId  String?  @unique @db.ObjectId
+  user         users?   @relation("UserAvatar", fields: [userId], references: [id])
+  shopAvatar   shops?   @relation("ShopAvatar", fields: [shopAvatarId], references: [id])
+  shopCover    shops?   @relation("ShopCover", fields: [shopCoverId], references: [id])
 }
 
-
 model users {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  email       String   @unique
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  email       String        @unique
   password    String
   name        String?
   roles       String[]
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  following String[] @db.ObjectId
-  avatar   images?  
-
-
+  isVerified  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  following   String[]      @db.ObjectId
+  avatar      images?       @relation("UserAvatar")
+  shopReviews shopReviews[]
 }
 
+model sellers {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  email       String        @unique
+  password    String
+  country     String?
+  stripId     String?
+  isVerified  Boolean       @default(false)
+  shop        shops?        @relation("SellerShop")
+  address     String?
+  socialLinks String[]
+  phoneNumber String?
+  website     String?
+  rating      Float         @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  reviews     shopReviews[]
+}
+
+model shopReviews {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  sellerId  String   @db.ObjectId
+  userId    String   @db.ObjectId
+  rating    Float
+  reviews   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sellers   sellers  @relation(fields: [sellerId], references: [id])
+  users     users    @relation(fields: [userId], references: [id])
+  shopsId   String?  @db.ObjectId
+  shops     shops?   @relation(fields: [shopsId], references: [id])
+}
+
+model shops {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  bio           String?
+  category      String?
+  avatar        images?       @relation("ShopAvatar")
+  coverBanner   images?       @relation("ShopCover")
+  sellerId      String        @unique @db.ObjectId
+  opening_hours String?
+  address       String?
+  socialLinks   Json[]
+  seller        sellers       @relation("SellerShop", fields: [sellerId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  reviews       shopReviews[]
+}
+
+//products model

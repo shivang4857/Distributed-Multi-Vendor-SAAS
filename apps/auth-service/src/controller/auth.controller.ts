@@ -199,3 +199,20 @@ export const getLoggedInUser = async ( req : any , res : Response , next : NextF
     return next(error);
   }
 }
+
+// register the seller
+export const registerSeller = async ( req: Request , res: Response , next: NextFunction) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return next(new ValidationError('Name, email, and password are required.'));
+    }
+
+   
+
+    return res.status(201).json({ message: 'Seller registered successfully.', user: newUser });
+  } catch (error) {
+    return next(error);
+  }
+}
